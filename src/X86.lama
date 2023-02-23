@@ -407,6 +407,35 @@ fun suffix (op) {
   esac
 }
 
+fun guardedCmp(lhv, rhv, code) {
+  case lhv of
+    R (_) -> code <+ Binop("cmp", lhv, rhv)
+  | _     ->
+      case rhv of
+        R (_) -> code <+ Binop("cmp", lhv, rhv)
+      | _     -> code <+ Mov(rhv, edx) <+ Binop("cmp", lhv, edx)
+      esac
+  esac
+}
+
+fun guardedBinop(op, lhv, rhv, code) {
+  case rhv of
+    R (_) -> code <+ Binop(op, lhv, rhv)
+  | _     -> code <+ Mov(rhv, eax) <+ Binop(op, lhv, eax) <+ Mov(eax, rhv)
+  esac
+}
+
+fun guardedMov(lhv, rhv, code) {
+  case lhv of 
+    R (_) -> code <+ Mov (lhv, rhv)
+  | _     ->
+    case rhv of 
+      R (_) -> code <+ Mov (lhv, rhv)
+    | _     -> code <+ Mov(lhv, eax) <+ Mov(eax, rhv)
+    esac
+  esac
+}
+
 -- Compiles stack machine code into a list of x86 instructions. Takes an environment
 -- and stack machine code, returns an updated environment and x86 code.
 fun compile (env, code) {
